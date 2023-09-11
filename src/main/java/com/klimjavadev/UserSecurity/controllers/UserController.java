@@ -1,79 +1,68 @@
 package com.klimjavadev.UserSecurity.controllers;
 
-import com.klimjavadev.UserSecurity.models.dto.UserDto;
-import com.klimjavadev.UserSecurity.models.dto.UserResponse;
-import com.klimjavadev.UserSecurity.models.dto.UserTransformer;
 import com.klimjavadev.UserSecurity.models.entity.User;
 import com.klimjavadev.UserSecurity.services.RoleService;
 import com.klimjavadev.UserSecurity.services.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@RestController
-@RequestMapping("/api/users")
+@Controller
+@RequestMapping("/users")
 public class UserController {
 
-    private Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
     private final RoleService roleService;
 
-    @Autowired
     public UserController(UserService userService, RoleService roleService) {
         this.userService = userService;
         this.roleService = roleService;
     }
 
-    @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody UserDto userDto) {
-        logger.info("Creating user");
-        User user = UserTransformer.convertToEntity(
-                userDto,
-                roleService.readById(userDto.getRoleId())
-                );
-        userService.create(user);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    @GetMapping("/create")
+    public String create(Model model) {
+        model.addAttribute("user", new User());
+        return "create-user";
     }
 
-    @GetMapping("/{user-id}")
-    public ResponseEntity<UserDto> readUser(@PathVariable("user-id") long id) {
-        logger.info("Read user with id = {}", id);
+    @PostMapping("/create")
+    public String create(@Validated @ModelAttribute("user") User user, BindingResult result) {
+        if (result.hasErrors()) {
+            return "create-user";
+        }
+        user.setPassword(user.getPassword());
+        user.setRole(roleService.readById(2));
+        User newUser = userService.create(user);
+        return "redirect:/todos/all/users/" + newUser.getId();
+    }
+
+    @GetMapping("/{id}/read")
+    public String read(@PathVariable long id, Model model) {
         User user = userService.readById(id);
-        UserDto userDto = UserTransformer.convertToDto(user);
-        return ResponseEntity.ok(userDto);
+        model.addAttribute("user", user);
+        return "user-info";
     }
 
-    @PutMapping("/{user-id}")
-    public ResponseEntity<?> updateUser(@PathVariable("user-id") long id,
-                                        @Valid @RequestBody UserDto userDto) {
-        logger.info("Updating user with id = {}", id);
-        User user = UserTransformer.convertToEntity(
-                userDto,
-                roleService.readById(userDto.getRoleId())
-        );
-        userService.update(user);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{id}/update")
+    public String update(@PathVariable long id, Model model) {
+        User user = userService.readById(id);
+        model.addAttribute("user", user);
+        model.addAttribute("roles", roleService.getAll());
+        return "update-user";
     }
 
-    @DeleteMapping("/{user-id}")
-    public ResponseEntity<?> deleteUser(@PathVariable("user-id") long id) {
-        logger.info("Delete user with id = {}", id);
+
+    @GetMapping("/{id}/delete")
+    public String delete(@PathVariable("id") long id) {
         userService.delete(id);
-        return ResponseEntity.noContent().build();
+        return "redirect:/users/all";
     }
 
-    @GetMapping
-    List<UserResponse> getAllUsers() {
-        logger.info("Getting all users");
-        return userService.getAll().stream()
-                .map(UserResponse::new)
-                .collect(Collectors.toList());
+    @GetMapping("/all")
+    public String getAll(Model model) {
+        model.addAttribute("users", userService.getAll());
+        return "users-list";
     }
 }
