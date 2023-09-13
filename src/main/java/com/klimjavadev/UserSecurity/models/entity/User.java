@@ -1,14 +1,19 @@
 package com.klimjavadev.UserSecurity.models.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Pattern;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
 @Data
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "users")
 public class User {
@@ -46,5 +51,9 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
+
+//    @ElementCollection(fetch = FetchType.EAGER) // try to remove fetch and debug the error
+    @ElementCollection
+    Collection<String> authorities;
 }
 

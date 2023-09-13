@@ -9,8 +9,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
-@RequestMapping("/users")
+//@Controller
+//@RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
